@@ -1,0 +1,11 @@
+label,target,model,val_mae,val_rmse,val_mape,val_smape,val_wape,test_mae,test_rmse,test_mape,test_smape,test_wape,status,recommended,notes
+industry_premium,premium_month_cr,Seasonal Naive,9097.03,9899.85,9.76,9.99,9.18,12381.86,15469.65,11.85,12.91,12.54,Success,False,
+industry_premium,premium_month_cr,Linear Regression (Time Features),9910.36,11530.68,10.46,9.83,10.0,11039.07,14192.62,10.51,11.07,11.18,Success,True,
+industry_premium,premium_month_cr,SARIMA,11073.8,12928.09,12.33,11.32,11.17,9806.58,11476.02,9.59,10.18,9.93,Success,False,"Fitted SARIMA(1, 1, 1)x(1, 1, 0, 12)"
+industry_premium,premium_month_cr,Prophet,10901.24,14010.46,12.16,10.95,11.0,7594.27,9175.67,7.39,7.61,7.69,Fallback (Holt-Winters),False,Prophet Fallback: Fitted Holt-Winters Exponential Smoothing with 12m additive seasonality.
+industry_premium,premium_month_cr,LSTM,10901.24,14010.46,12.16,10.95,11.0,7594.27,9175.67,7.39,7.61,7.69,Success,False,LSTM Fallback: Holt-Winters with 12m additive seasonality.
+industry_policies,policies_month,Seasonal Naive,1136897.56,1369229.42,18.86,17.47,17.56,999178.89,1243965.84,17.19,17.93,17.76,Success,True,
+industry_policies,policies_month,Linear Regression (Time Features),1413486.94,1568782.99,25.81,23.08,21.83,790850.6,1091381.79,12.63,13.87,14.06,Success,False,
+industry_policies,policies_month,SARIMA,1300225.81,1511884.45,21.97,19.68,20.08,1377149.68,1622914.82,24.19,28.72,24.48,Success,False,"Fitted SARIMA(1, 1, 1)x(1, 1, 0, 12)"
+industry_policies,policies_month,Prophet,1254197.01,1492829.54,21.18,18.93,19.37,1892897.75,1933070.74,34.26,41.6,33.65,Fallback (Holt-Winters),False,Prophet Fallback: Fitted Holt-Winters Exponential Smoothing with 12m additive seasonality.
+industry_policies,policies_month,LSTM,1254197.01,1492829.54,21.18,18.93,19.37,1892897.75,1933070.74,34.26,41.6,33.65,Success,False,LSTM Fallback: Holt-Winters with 12m additive seasonality.
