@@ -13,8 +13,24 @@ import {
   Calendar,
   ArrowRight,
   Database,
-  Award
+  Award,
+  BarChart2,
+  Activity
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ReferenceLine,
+  Cell,
+} from 'recharts';
 import ForecastControls from '../components/ForecastControls';
 import ForecastChart from '../components/ForecastChart';
 import ComparisonTable from '../components/ComparisonTable';
@@ -127,6 +143,29 @@ export default function ForecastPage({ metadata }) {
     }
   };
 
+  const handleExportErrorAnalysis = () => {
+    if (!forecastResult?.test_error_analysis?.monthly_errors) return;
+    const errors = forecastResult.test_error_analysis.monthly_errors;
+    const headers = ['Month', 'Date', 'Actual', 'Prediction', 'Signed_Error', 'Absolute_Error', 'Error_Percentage_Pct'];
+    const rows = errors.map((r) => [
+      `"${r.display_date}"`,
+      `"${r.date}"`,
+      r.actual ?? '',
+      r.prediction ?? '',
+      r.error ?? '',
+      r.absolute_error ?? '',
+      r.error_pct ?? '',
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `test_error_analysis_${level}_${target}_${forecastResult.selected_model.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleReset = () => {
     setLevel('industry');
     if (metadata?.insurers?.length > 0) setSelectedInsurer(metadata.insurers[0]);
@@ -155,7 +194,7 @@ export default function ForecastPage({ metadata }) {
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#047857] bg-[#D1FAE5]/60 px-2.5 py-1 rounded-full border border-[#10B981]/30 flex items-center space-x-1">
               <Database className="w-3 h-3 text-[#10B981]" />
-              <span>128 Authentic Observations (Jan 2016 – Aug 2026)</span>
+              <span>128 Verified Observations (Jan 2016 – Aug 2026)</span>
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#0F2D64] mt-2">
@@ -190,7 +229,7 @@ export default function ForecastPage({ metadata }) {
             </h3>
           </div>
           <span className="text-[11px] text-slate-500 font-medium">
-            Total 128 Months Ingested • 0 Data Leakage • 100% Retraining for 24m Projection
+            Total 128 Months Ingested (Jan 2016–Aug 2026) • 0 Data Leakage • 100% Retraining for 24m Projection
           </span>
         </div>
 
@@ -228,16 +267,16 @@ export default function ForecastPage({ metadata }) {
             <div className="text-[10px] text-slate-500 mt-1">Unbiased holdout benchmark</div>
           </div>
 
-          {/* 4. Retrain */}
+          {/* 4. Retrain
           <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
             <div className="flex items-center justify-between text-[10px] text-amber-800 uppercase font-bold">
               <span>4. Full Retraining</span>
               <span className="text-amber-700">100% Data</span>
             </div>
-            <div className="text-sm font-bold text-[#0F2D64] mt-1">128 Months</div>
-            <div className="text-[11px] text-amber-800 font-semibold">Jan 2016 – Aug 2026</div>
+            <div className="text-sm font-bold text-[#0F2D64] mt-1">68 Months</div>
+            <div className="text-[11px] text-amber-800 font-semibold">Jan 2021 – Aug 2026</div>
             <div className="text-[10px] text-slate-500 mt-1">Winning model re-fit</div>
-          </div>
+          </div> */}
 
           {/* 5. Production Forecast */}
           <div className="p-3 rounded-xl bg-[#D1FAE5]/60 border border-[#10B981]/40">
@@ -304,13 +343,15 @@ export default function ForecastPage({ metadata }) {
             </div>
           )}
 
-          {/* Forecast Chart */}
+          {/* Forecast Chart (Includes Switcher / Swap to Test Error Analysis) */}
           <ForecastChart
             historicalData={forecastResult?.historical_data || []}
             forecastData={forecastResult?.forecast_data || []}
             targetUnit={targetUnit}
             title={`${level === 'industry' ? 'Industry' : level === 'insurer' ? selectedInsurer : level === 'category' ? selectedCategory : `${selectedInsurer} (${selectedCategory})`} - ${target === 'premium_month_cr' ? 'New Business Premium' : 'Policies Underwritten'}`}
             selectedModel={forecastResult?.selected_model || 'Model'}
+            testErrorAnalysis={forecastResult?.test_error_analysis || null}
+            loading={loading}
           />
 
           {/* Dual Evaluation & Generalization Scorecards */}
@@ -322,7 +363,7 @@ export default function ForecastPage({ metadata }) {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#047857] bg-[#D1FAE5]/60 px-2.5 py-0.5 rounded-full border border-[#10B981]/30">
                     Validation Metric (Model Selection)
                   </span>
-                  <span className="text-[10px] text-slate-500 font-medium">19 Months Holdout</span>
+                  <span className="text-[10px] text-slate-500 font-medium">7 Months Holdout</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 pt-1">
                   <div className="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
@@ -483,4 +524,3 @@ export default function ForecastPage({ metadata }) {
     </div>
   );
 }
-

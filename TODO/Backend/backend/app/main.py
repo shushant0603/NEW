@@ -19,11 +19,25 @@ async def lifespan(app: FastAPI):
     try:
         data_service.initialize_data()
         logger.info("Initial dataset successfully loaded and preprocessed.")
-        from .models import model_manager
+        from .models import model_manager, MODEL_REGISTRY
+        from .services.evaluation_service import build_monthly_error_analysis
+        from .services.aggregation_service import aggregate_time_series
         for label in ["industry_premium", "industry_policies"]:
             for key in ["seasonal_naive", "linear_regression", "sarima", "prophet", "lstm"]:
                 model_manager.load_model(label, key)
         logger.info("Pre-trained .pkl model artifacts pre-warmed into memory cache.")
+        
+        # Pre-warm monthly error analysis for instant UI response
+        df = data_service.get_processed_df()
+        for target in ["premium_month_cr", "policies_month"]:
+            agg_df, _ = aggregate_time_series(df=df, level="industry", target=target)
+            s = agg_df["target_value"]
+            d = agg_df["date"]
+            for m_key in ["seasonal_naive", "linear_regression", "sarima", "prophet", "lstm"]:
+                m_cls = MODEL_REGISTRY.get(m_key)
+                if m_cls:
+                    build_monthly_error_analysis(s, d, m_key, m_cls)
+        logger.info("Test period error analyses pre-warmed into memory cache.")
     except Exception as e:
         logger.warning(f"Initial startup warning: {e}")
     yield

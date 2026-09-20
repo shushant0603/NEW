@@ -17,12 +17,12 @@ MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_CSV_PATH = PROCESSED_DATA_DIR / "life_insurance_nbp_consolidated.csv"
 
-# Chronological Time-Series Split Configuration (128 observations)
+# Chronological Time-Series Split Configuration (128 observations: Jan 2016 – Aug 2026)
 CONFIRMED_TOTAL_MONTHS = 128
-TRAIN_OBSERVATIONS = 90    # Jan 2016 – Jun 2023 (~70.3%)
-VAL_OBSERVATIONS = 19      # Jul 2023 – Jan 2025 (~14.8%)
-TEST_OBSERVATIONS = 19     # Feb 2025 – Aug 2026 (~14.8%)
-FORECAST_HORIZON = 24      # Sep 2026 – Aug 2028 (24 months)
+TRAIN_OBSERVATIONS = 90   # Jan 2016 – Jun 2023 (70.3%) — base model fit
+VAL_OBSERVATIONS = 19     # Jul 2023 – Jan 2025 (14.8%) — model selection criterion
+TEST_OBSERVATIONS = 19    # Feb 2025 – Aug 2026 (14.8%) — untouched holdout benchmark (19 months)
+FORECAST_HORIZON = 24     # Sep 2026 – Aug 2028 (out-of-sample projection)
 
 # Forecasting Configuration
 DEFAULT_TARGET = "premium_month_cr"

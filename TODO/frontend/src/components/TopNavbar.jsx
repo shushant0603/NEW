@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Menu,
   RotateCw,
@@ -8,7 +8,10 @@ import {
   Activity,
   User,
   Shield,
-  Clock
+  Clock,
+  LogOut,
+  ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 import { NAV_ITEMS } from './Sidebar';
 
@@ -19,9 +22,28 @@ export default function TopNavbar({
   health,
   setMobileOpen,
   latestMonthDisplay = 'Aug 2026',
+  currentUser = null,
+  onLogout = null,
 }) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const menuRef = useRef(null);
   const currentNav = NAV_ITEMS.find((n) => n.id === activeTab);
   const pageTitle = currentNav ? currentNav.label : 'Dashboard';
+
+  const userName = currentUser?.name || 'Gulshan Kumar';
+  const userRole = currentUser?.role || 'Chief Actuary & ML Lead';
+  const userEmail = currentUser?.email || 'admin@gulshan.in';
+  const userInitial = userName.charAt(0).toUpperCase();
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-white border-b border-[#E5E7EB] shadow-sm">
@@ -79,7 +101,7 @@ export default function TopNavbar({
             onClick={onRefresh}
             disabled={refreshing}
             title="Refresh Data & Predictions"
-            className="p-2 rounded-xl bg-[#F8FAFC] hover:bg-[#E8F1FF] border border-[#E2E8F0] text-[#0F2D64] text-xs font-medium transition-all disabled:opacity-50"
+            className="p-2 rounded-xl bg-[#F8FAFC] hover:bg-[#E8F1FF] border border-[#E2E8F0] text-[#0F2D64] text-xs font-medium transition-all disabled:opacity-50 cursor-pointer"
           >
             <RotateCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-[#10B981]' : ''}`} />
           </button>
@@ -87,25 +109,58 @@ export default function TopNavbar({
           {/* Notification Bell Button */}
           <button
             title="Notifications"
-            className="relative p-2 rounded-xl bg-[#F8FAFC] hover:bg-[#E8F1FF] border border-[#E2E8F0] text-[#0F2D64] transition-colors"
+            className="relative p-2 rounded-xl bg-[#F8FAFC] hover:bg-[#E8F1FF] border border-[#E2E8F0] text-[#0F2D64] transition-colors cursor-pointer"
           >
             <Bell className="w-4 h-4" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#EF4444] rounded-full"></span>
           </button>
 
-          {/* User Profile Avatar */}
-          <div className="flex items-center space-x-2.5 pl-2 border-l border-[#E5E7EB]">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0F2D64] to-[#2563EB] flex items-center justify-center text-white text-xs font-bold shadow-sm">
-              G
-            </div>
-            <div className="hidden sm:block text-left">
-              <div className="text-xs font-bold text-[#0F2D64] leading-tight">
-                Mr Gulshan
+          {/* User Profile Avatar with Dropdown */}
+          <div className="relative pl-2 border-l border-[#E5E7EB]" ref={menuRef}>
+            <button
+              onClick={() => setProfileOpen(!profileOpen)}
+              className="flex items-center space-x-2.5 p-1 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0F2D64] to-[#2563EB] flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                {userInitial}
               </div>
-              <div className="text-[10px] text-[#6B7280] font-medium mt-0.5">
-                SureInsight Intelligence
+              <div className="hidden sm:block text-left">
+                <div className="text-xs font-bold text-[#0F2D64] leading-tight flex items-center gap-1">
+                  <span>{userName}</span>
+                  <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+                </div>
+                <div className="text-[10px] text-[#6B7280] font-medium mt-0.5 truncate max-w-[120px]">
+                  {userRole}
+                </div>
               </div>
-            </div>
+            </button>
+
+            {/* Profile Dropdown Menu */}
+            {profileOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-[#E5E7EB] p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="p-3 border-b border-slate-100 bg-[#F8FAFC] rounded-xl mb-1.5">
+                  <div className="text-xs font-bold text-[#0F2D64]">{userName}</div>
+                  <div className="text-[11px] text-slate-500 truncate">{userEmail}</div>
+                  <div className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#2563EB] text-[9px] font-bold mt-1.5 border border-[#BFDBFE]">
+                    <Shield className="w-2.5 h-2.5" />
+                    <span>{userRole}</span>
+                  </div>
+                </div>
+
+                {onLogout && (
+                  <button
+                    onClick={() => {
+                      setProfileOpen(false);
+                      onLogout();
+                    }}
+                    className="w-full flex items-center space-x-2 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -20,10 +20,10 @@ export const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: null },
   { id: 'analytics', label: 'Historical Analytics', icon: TrendingUp, badge: '128m' },
   { id: 'forecasting', label: 'Forecasting', icon: Sparkles, badge: '24m' },
-  { id: 'evaluation', label: 'Model Evaluation', icon: Scale, badge: null },
+  // { id: 'evaluation', label: 'Model Evaluation', icon: Scale, badge: null },
   { id: 'insurers', label: 'Insurer Analysis', icon: Building2, badge: null },
   { id: 'categories', label: 'Category Analysis', icon: Layers, badge: null },
-  { id: 'quality', label: 'Data Quality', icon: ShieldCheck, badge: 'Audit' },
+  // { id: 'quality', label: 'Data Quality', icon: ShieldCheck, badge: 'Audit' },
   { id: 'reports', label: 'Reports & Export', icon: FileSpreadsheet, badge: null },
   { id: 'settings', label: 'Settings', icon: Settings, badge: null },
 ];
@@ -54,13 +54,11 @@ export default function Sidebar({
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-white border-r border-[#E5E7EB] shadow-sm transition-all duration-300 ${
-          collapsed ? 'w-20' : 'w-64'
-        } ${
-          mobileOpen
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-white border-r border-[#E5E7EB] shadow-sm transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'
+          } ${mobileOpen
             ? 'translate-x-0'
             : '-translate-x-full lg:translate-x-0'
-        }`}
+          }`}
       >
         {/* Brand Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-[#E5E7EB] bg-white">
@@ -103,30 +101,26 @@ export default function Sidebar({
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
                 title={collapsed ? item.label : undefined}
-                className={`w-full flex items-center ${
-                  collapsed ? 'justify-center px-0' : 'justify-between px-3.5'
-                } py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group relative ${
-                  isActive
+                className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'justify-between px-3.5'
+                  } py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group relative ${isActive
                     ? 'bg-[#0F2D64] text-white shadow-md shadow-blue-950/20'
                     : 'text-[#4B5563] hover:text-[#0F2D64] hover:bg-[#E8F1FF]'
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-3">
                   <Icon
-                    className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
-                      isActive ? 'text-[#10B981]' : 'text-[#6B7280] group-hover:text-[#0F2D64]'
-                    }`}
+                    className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-[#10B981]' : 'text-[#6B7280] group-hover:text-[#0F2D64]'
+                      }`}
                   />
                   {!collapsed && <span className="truncate">{item.label}</span>}
                 </div>
 
                 {!collapsed && item.badge && (
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      isActive
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive
                         ? 'bg-[#10B981] text-white'
                         : 'bg-[#E5E7EB] text-[#4B5563]'
-                    }`}
+                      }`}
                   >
                     {item.badge}
                   </span>
@@ -143,7 +137,7 @@ export default function Sidebar({
           })}
         </nav>
 
-        {/* Dataset Status & Collapse Toggle */}
+        {/* Dataset Status, User Badge & Collapse Toggle */}
         <div className="p-3 border-t border-[#E5E7EB] bg-white space-y-2">
           {!collapsed && (
             <div className="p-3 rounded-xl bg-[#F0F6FF] border border-[#D1E4FF] text-[11px]">
@@ -158,7 +152,7 @@ export default function Sidebar({
                 Jan 2016 – Aug 2026
               </div>
               <div className="text-[10px] text-[#6B7280] mt-0.5 font-medium">
-                128 Monthly IRDAI Filings
+                68 Verified IRDAI Filings
               </div>
             </div>
           )}
@@ -166,15 +160,15 @@ export default function Sidebar({
           {/* Desktop Collapse Toggle */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex w-full items-center justify-center py-2 rounded-xl text-[#6B7280] hover:text-[#0F2D64] hover:bg-[#F0F6FF] transition-colors"
+            className="hidden lg:flex w-full items-center justify-center py-2 rounded-xl text-[#6B7280] hover:text-[#0F2D64] hover:bg-[#F0F6FF] transition-colors cursor-pointer"
             title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           >
             {collapsed ? (
               <ChevronRight className="w-4 h-4" />
             ) : (
-              <div className="flex items-center space-x-2 text-xs font-medium">
+              <div className="flex items-center space-x-2 text-xs font-medium text-slate-500 hover:text-[#0F2D64]">
                 <ChevronLeft className="w-4 h-4" />
-               
+                <span>Collapse Navigation</span>
               </div>
             )}
           </button>

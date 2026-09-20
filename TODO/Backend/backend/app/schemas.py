@@ -89,6 +89,25 @@ class ForecastDataPoint(BaseModel):
     upper_bound: Optional[float] = None
     is_forecast: bool = True
 
+# --- Test Period Monthly Error Analysis Schemas ---
+class MonthlyErrorPoint(BaseModel):
+    date: str                          # ISO YYYY-MM-DD
+    display_date: str                  # e.g. "Feb 2025"
+    actual: float
+    prediction: float
+    error: float                       # actual - prediction (signed)
+    absolute_error: float              # |actual - prediction|
+    error_pct: Optional[float] = None # |error| / |actual| * 100 (None if actual≈0)
+
+class TestPeriodErrorAnalysis(BaseModel):
+    start: str                         # e.g. "2025-02"
+    end: str                           # e.g. "2026-08"
+    n_months: int
+    mae: float
+    rmse: float
+    mape: Optional[float] = None       # None if any actual==0
+    monthly_errors: List[MonthlyErrorPoint]
+
 # --- Chronological Split Partition Schema ---
 class SplitPartitionInfo(BaseModel):
     total_observations: int
@@ -138,6 +157,7 @@ class ForecastResponse(BaseModel):
     evaluation_metrics: List[ModelEvaluationMetric]
     split_info: Optional[SplitPartitionInfo] = None
     selected_model_test_metrics: Optional[Dict[str, Any]] = None
+    test_error_analysis: Optional[TestPeriodErrorAnalysis] = None
     warnings: List[str]
 
 class ModelComparisonRequest(BaseModel):

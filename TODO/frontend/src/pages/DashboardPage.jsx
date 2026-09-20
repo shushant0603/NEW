@@ -258,7 +258,9 @@ export default function DashboardPage({ onNavigate }) {
             forecastData={forecast?.forecast_data || []}
             targetUnit="₹ Cr"
             title="Historical Actuals & 24-Month Forecast"
-            selectedModel={forecast?.selected_model || 'Linear Regression'}
+            selectedModel={forecast?.selected_model || 'LSTM'}
+            testErrorAnalysis={forecast?.test_error_analysis || null}
+            loading={loading}
           />
         </div>
 

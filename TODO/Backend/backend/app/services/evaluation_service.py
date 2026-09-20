@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from typing import Dict, Any, List, Tuple, Optional
 from ..models import MODEL_REGISTRY
-from ..schemas import ModelEvaluationMetric, SplitPartitionInfo
+from ..schemas import ModelEvaluationMetric, SplitPartitionInfo, MonthlyErrorPoint, TestPeriodErrorAnalysis
 from ..config import (
     CONFIRMED_TOTAL_MONTHS,
     TRAIN_OBSERVATIONS,
@@ -215,3 +215,122 @@ def evaluate_models_on_series(
         rec_reason = "Fallback to Seasonal Naive model as other models failed to converge."
 
     return results, rec_model_name, rec_reason, split_info
+
+
+_MONTHLY_ERROR_CACHE: Dict[str, TestPeriodErrorAnalysis] = {}
+
+def build_monthly_error_analysis(
+    series: pd.Series,
+    dates: Optional[pd.Series],
+    model_key: str,
+    model_cls,
+) -> Optional[TestPeriodErrorAnalysis]:
+    """
+    Produces per-month error analysis for the strictly held-out test period.
+    Uses in-memory caching to prevent expensive re-training on repeated requests.
+    """
+    from ..utils.date_utils import format_display_month
+    try:
+        clean_s = pd.to_numeric(series.dropna(), errors="coerce")
+        n = len(clean_s)
+        if n < 6:
+            return None
+
+        # Check memory cache
+        first_val = float(clean_s.iloc[0])
+        last_val = float(clean_s.iloc[-1])
+        cache_key = f"{n}_{first_val:.2f}_{last_val:.2f}_{model_key}"
+        if cache_key in _MONTHLY_ERROR_CACHE:
+            return _MONTHLY_ERROR_CACHE[cache_key]
+
+        train_size, val_size, test_size, _ = get_chronological_splits(n, dates)
+
+        if test_size < 1:
+            return None
+
+        # ── Series partitions ───────────────────────────────────────────────
+        train_val_s = clean_s.iloc[: train_size + val_size]
+        test_s = clean_s.iloc[train_size + val_size :]
+        y_test = test_s.to_numpy(dtype=float)
+
+        test_dates: Optional[pd.Series] = None
+        if dates is not None and len(dates) == n:
+            train_val_dates = dates.iloc[: train_size + val_size]
+            test_dates = dates.iloc[train_size + val_size :]
+        else:
+            train_val_dates = None
+
+        # ── Fit on train+val, predict test_size steps ───────────────────────
+        # For live test evaluation, instantiate with fast/adaptive settings if supported
+        if model_key == "lstm":
+            model = model_cls(epochs=8) if hasattr(model_cls, "__init__") else model_cls()
+        else:
+            model = model_cls()
+
+        model.fit(train_val_s, train_val_dates)
+        y_pred_raw, _, _ = model.predict(test_size)
+        y_pred = np.asarray(y_pred_raw, dtype=float)
+
+        # Guard: clip prediction array length to actual test length
+        min_len = min(len(y_test), len(y_pred))
+        y_test = y_test[:min_len]
+        y_pred = y_pred[:min_len]
+
+        # ── Per-month error rows ─────────────────────────────────────────────
+        monthly_errors: List[MonthlyErrorPoint] = []
+        for i in range(min_len):
+            act = float(y_test[i])
+            pred = float(y_pred[i])
+            err = act - pred
+            abs_err = abs(err)
+            err_pct: Optional[float] = None
+            if abs(act) >= EPSILON:
+                err_pct = round(abs_err / abs(act) * 100.0, 4)
+
+            # Date label
+            if test_dates is not None and i < len(test_dates):
+                iso_date = str(test_dates.iloc[i])[:10]   # ensure YYYY-MM-DD
+            else:
+                iso_date = f"T{train_size + val_size + i + 1}"
+
+            monthly_errors.append(MonthlyErrorPoint(
+                date=iso_date,
+                display_date=format_display_month(iso_date) if "-" in iso_date else iso_date,
+                actual=round(act, 4),
+                prediction=round(pred, 4),
+                error=round(err, 4),
+                absolute_error=round(abs_err, 4),
+                error_pct=round(err_pct, 4) if err_pct is not None else None,
+            ))
+
+        # ── Aggregate metrics (test-only, no leakage) ───────────────────────
+        abs_errors = np.abs(y_test - y_pred)
+        mae = float(round(np.mean(abs_errors), 4))
+        rmse = float(round(np.sqrt(np.mean((y_test - y_pred) ** 2)), 4))
+
+        # MAPE — safe division
+        denom = np.where(np.abs(y_test) < EPSILON, np.nan, np.abs(y_test))
+        ape = np.abs(y_test - y_pred) / denom
+        mape: Optional[float] = None
+        if not np.all(np.isnan(ape)):
+            mape = float(round(float(np.nanmean(ape)) * 100.0, 4))
+
+        # Period labels
+        start_label = monthly_errors[0].date[:7] if monthly_errors else ""
+        end_label = monthly_errors[-1].date[:7] if monthly_errors else ""
+
+        result = TestPeriodErrorAnalysis(
+            start=start_label,
+            end=end_label,
+            n_months=min_len,
+            mae=mae,
+            rmse=rmse,
+            mape=mape,
+            monthly_errors=monthly_errors,
+        )
+        _MONTHLY_ERROR_CACHE[cache_key] = result
+        return result
+
+    except Exception as e:
+        logger.warning(f"build_monthly_error_analysis failed for '{model_key}': {e}")
+        return None

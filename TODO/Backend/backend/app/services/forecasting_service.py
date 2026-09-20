@@ -15,7 +15,7 @@ from ..schemas import (
 from ..models import MODEL_REGISTRY, model_manager
 from .data_service import data_service
 from .aggregation_service import aggregate_time_series, df_to_historical_points
-from .evaluation_service import evaluate_models_on_series
+from .evaluation_service import evaluate_models_on_series, build_monthly_error_analysis
 from ..utils.date_utils import generate_future_dates, format_display_month
 from ..utils.logger import get_logger
 
@@ -149,25 +149,8 @@ class ForecastingService:
 
         if cached:
             metrics_list, recommended_model_name, rec_reason = cached
-            from ..schemas import SplitPartitionInfo
-            n = len(series)
-            train_n = int(n * 0.70)
-            val_n   = int(n * 0.15)
-            test_n  = n - train_n - val_n
-            split_info = SplitPartitionInfo(
-                total_observations=n,
-                train_months=train_n,
-                train_pct=round((train_n / n) * 100.0, 1),
-                validation_months=val_n,
-                validation_pct=round((val_n / n) * 100.0, 1),
-                test_months=test_n,
-                test_pct=round((test_n / n) * 100.0, 1),
-                train_period=f"First {train_n} months ({dates.iloc[0]} to {dates.iloc[train_n-1]})",
-                validation_period=f"Next {val_n} months ({dates.iloc[train_n]} to {dates.iloc[train_n+val_n-1]})",
-                test_period=f"Last {test_n} months ({dates.iloc[train_n+val_n]} to {dates.iloc[-1]})",
-                forecast_period=f"Future {req.horizon} Months",
-                forecast_months=req.horizon
-            )
+            from .evaluation_service import get_chronological_splits
+            _, _, _, split_info = get_chronological_splits(len(series), dates)
             logger.info(f"Using cached evaluation metrics for label={label}")
         else:
             logger.info("No cached metrics found — running live evaluation")
@@ -259,6 +242,14 @@ class ForecastingService:
                     }
                     break
 
+        # 4c. Build per-month test error analysis for the selected model
+        test_error_analysis = build_monthly_error_analysis(
+            series=series,
+            dates=dates,
+            model_key=model_key_to_use,
+            model_cls=model_cls,
+        )
+
         return ForecastResponse(
             level=req.level,
             insurer=req.insurer,
@@ -274,6 +265,7 @@ class ForecastingService:
             evaluation_metrics=metrics_list,
             split_info=split_info,
             selected_model_test_metrics=test_metrics_dict,
+            test_error_analysis=test_error_analysis,
             warnings=warnings
         )
 
@@ -290,7 +282,16 @@ class ForecastingService:
         series = agg_df["target_value"]
         dates = agg_df["date"]
 
-        metrics_list, rec_model_name, rec_reason, split_info = evaluate_models_on_series(series, dates)
+        label = _get_label(req.level, req.target, req.insurer, req.category)
+        cached = _metrics_from_report(label, req.target) if label else None
+
+        if cached:
+            metrics_list, rec_model_name, rec_reason = cached
+            from .evaluation_service import get_chronological_splits
+            _, _, _, split_info = get_chronological_splits(len(series), dates)
+        else:
+            metrics_list, rec_model_name, rec_reason, split_info = evaluate_models_on_series(series, dates)
+
         target_unit = SUPPORTED_TARGETS.get(req.target, {}).get("unit", "")
 
         return ModelComparisonResponse(

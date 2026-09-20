@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import Sidebar from './components/Sidebar';
 import TopNavbar from './components/TopNavbar';
+import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import HistoricalAnalyticsPage from './pages/HistoricalAnalyticsPage';
 import ForecastPage from './pages/ForecastPage';
@@ -15,6 +16,15 @@ import api from './services/api';
 import { ShieldCheck } from 'lucide-react';
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('auth_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -25,8 +35,10 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadAppInitialData();
-  }, []);
+    if (currentUser) {
+      loadAppInitialData();
+    }
+  }, [currentUser]);
 
   const loadAppInitialData = async () => {
     setLoadingHealth(true);
@@ -53,6 +65,20 @@ export default function App() {
     }
   };
 
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_user');
+    setCurrentUser(null);
+  };
+
+  // If user is not authenticated, render the LoginPage
+  if (!currentUser) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-[#F8FAFC] text-[#1F2937] transition-colors flex flex-col">
@@ -65,6 +91,8 @@ export default function App() {
           mobileOpen={mobileOpen}
           setMobileOpen={setMobileOpen}
           health={health}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
 
         {/* Main Content Area (Offset by sidebar width on desktop) */}
@@ -81,6 +109,8 @@ export default function App() {
             health={health}
             setMobileOpen={setMobileOpen}
             latestMonthDisplay="Aug 2026"
+            currentUser={currentUser}
+            onLogout={handleLogout}
           />
 
           {/* Page Content Container */}

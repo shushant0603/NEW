@@ -121,28 +121,8 @@ export default function ForecastControls({
         </div>
       </div>
 
-      {/* Conditional Insurer and Category Selectors */}
+      {/* Conditional Insurer and Category Selectors (Category on Left, Insurer on Right) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {(level === 'insurer' || level === 'insurer_category') && (
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#6B7280] mb-2 flex items-center space-x-1">
-              <Building2 className="w-3.5 h-3.5 text-[#0F2D64]" />
-              <span>Select Life Insurer</span>
-            </label>
-            <select
-              value={selectedInsurer}
-              onChange={(e) => setSelectedInsurer(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl text-xs text-[#1F2937] font-semibold focus:outline-none focus:border-[#0F2D64] transition-colors"
-            >
-              {metadata?.insurers?.map((ins) => (
-                <option key={ins} value={ins}>
-                  {ins}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
         {(level === 'category' || level === 'insurer_category') && (
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#6B7280] mb-2 flex items-center space-x-1">
@@ -157,6 +137,26 @@ export default function ForecastControls({
               {metadata?.categories?.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {(level === 'insurer' || level === 'insurer_category') && (
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#6B7280] mb-2 flex items-center space-x-1">
+              <Building2 className="w-3.5 h-3.5 text-[#0F2D64]" />
+              <span>Select Life Insurer</span>
+            </label>
+            <select
+              value={selectedInsurer}
+              onChange={(e) => setSelectedInsurer(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl text-xs text-[#1F2937] font-semibold focus:outline-none focus:border-[#0F2D64] transition-colors"
+            >
+              {metadata?.insurers?.map((ins) => (
+                <option key={ins} value={ins}>
+                  {ins}
                 </option>
               ))}
             </select>
